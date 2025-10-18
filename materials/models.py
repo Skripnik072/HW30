@@ -56,6 +56,7 @@ class Lesson(models.Model):
         blank=True,
         null=True,
         help_text="Введите название курса",
+        related_name='lessons',
     )
 
     video = models.FileField(
