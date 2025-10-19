@@ -49,13 +49,14 @@ class Lesson(models.Model):
         verbose_name="Картинка",
         help_text="Загрузите картинку",
     )
-    lesson = models.ForeignKey(
+    course = models.ForeignKey(
         Course,
         on_delete=models.SET_NULL,
         verbose_name="Курс",
         blank=True,
         null=True,
         help_text="Введите название курса",
+        related_name='lessons',
     )
 
     video = models.FileField(

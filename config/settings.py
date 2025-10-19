@@ -1,7 +1,8 @@
 import os
 from pathlib import Path
 
-from django.conf.global_settings import MEDIA_URL, AUTH_USER_MODEL
+from django.conf.global_settings import AUTH_USER_MODEL, MEDIA_URL
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -25,6 +26,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "users",
     "materials",
+    "django_filters",
 ]
 
 MIDDLEWARE = [
@@ -56,6 +58,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
+REST_FRAMEWORK = {
+    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"]
+}
 
 DATABASES = {
     "default": {
