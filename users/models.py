@@ -59,7 +59,7 @@ class Payment(models.Model):
     payment_method = models.CharField(
         max_length=50,
         verbose_name="Метод платежа",
-        help_text="Вид платежа: наличные/перевод",
+        choices=[('cash', 'наличные'), ('transfer', 'перевод')],
     )
     paid_course = models.ForeignKey(
         Course,
