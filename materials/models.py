@@ -1,4 +1,6 @@
 from django.db import models
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 
 class Course(models.Model):
@@ -9,6 +11,7 @@ class Course(models.Model):
         verbose_name="Курс",
         help_text="Введите название курса",
     )
+
     description = models.TextField(
         blank=True,
         null=True,
@@ -24,6 +27,15 @@ class Course(models.Model):
         help_text="Загрузите картинку",
     )
 
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        verbose_name="Владелец курса",
+        blank=True,
+        null=True,
+        help_text="Укажите владельца курса",
+    )
+
     class Meta:
         verbose_name = "Курс"
         verbose_name_plural = "Курсы"
@@ -35,6 +47,7 @@ class Lesson(models.Model):
     name = models.CharField(
         max_length=50, verbose_name="Урок", help_text="Введите название урока"
     )
+
     description = models.TextField(
         blank=True,
         null=True,
@@ -49,6 +62,7 @@ class Lesson(models.Model):
         verbose_name="Картинка",
         help_text="Загрузите картинку",
     )
+
     course = models.ForeignKey(
         Course,
         on_delete=models.SET_NULL,
@@ -57,6 +71,15 @@ class Lesson(models.Model):
         null=True,
         help_text="Введите название курса",
         related_name='lessons',
+    )
+
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        verbose_name="Владелец урока",
+        blank=True,
+        null=True,
+        help_text="Укажите владельца урока",
     )
 
     video = models.FileField(

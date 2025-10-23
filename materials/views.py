@@ -6,6 +6,7 @@ from rest_framework.generics import (
     UpdateAPIView,
 )
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.permissions import IsAuthenticated
 
 from materials.models import Course, Lesson
 from materials.serializers import (
@@ -13,6 +14,7 @@ from materials.serializers import (
     LessonSerializer,
     LessonDetailSerializer,
 )
+from users.permissions import IsModer
 
 
 class LessonViewSet(ModelViewSet):
@@ -23,6 +25,13 @@ class LessonViewSet(ModelViewSet):
             return LessonDetailSerializer
         return LessonSerializer
 
+    def get_permissions(self):
+        if self.action in ["create", "destroy"]:
+            self.permission_classes = (~IsModer,)
+        elif self.action in ["update", "retrieve"]:
+            self.permission_classes = (IsModer,)
+        return super().get_permissions()
+
 
 class CourseListApiView(ListAPIView):
     queryset = Course.objects.all()
@@ -32,6 +41,7 @@ class CourseListApiView(ListAPIView):
 class CourseCreateApiView(CreateAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
+    permission_classes = [IsAuthenticated, IsModer]
 
 
 class CourseRetrieveApiView(RetrieveAPIView):
@@ -47,3 +57,4 @@ class CourseUpdateApiView(UpdateAPIView):
 class CourseDestroyApiView(DestroyAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
+    permission_classes = [IsAuthenticated, IsModer]
