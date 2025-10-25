@@ -1,6 +1,5 @@
 from django.db import models
-from django.contrib.auth import get_user_model
-User = get_user_model()
+from django.conf import settings
 
 
 class Course(models.Model):
@@ -28,7 +27,7 @@ class Course(models.Model):
     )
 
     owner = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         verbose_name="Владелец курса",
         blank=True,
@@ -74,7 +73,7 @@ class Lesson(models.Model):
     )
 
     owner = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         verbose_name="Владелец урока",
         blank=True,

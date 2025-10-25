@@ -14,7 +14,7 @@ from materials.serializers import (
     LessonSerializer,
     LessonDetailSerializer,
 )
-from users.permissions import IsModer
+from users.permissions import IsModer, IsOwner
 
 
 class LessonViewSet(ModelViewSet):
@@ -25,11 +25,19 @@ class LessonViewSet(ModelViewSet):
             return LessonDetailSerializer
         return LessonSerializer
 
+    def perform_create(self, serializer):
+        lesson = serializer.save()
+        lesson.owner = self.request.user
+        lesson.save()
+
+
     def get_permissions(self):
-        if self.action in ["create", "destroy"]:
+        if self.action in "create":
             self.permission_classes = (~IsModer,)
         elif self.action in ["update", "retrieve"]:
-            self.permission_classes = (IsModer,)
+            self.permission_classes = (IsModer | IsOwner,)
+        elif self.action == "destroy":
+            self.permission_classes = (~IsModer | IsOwner,)
         return super().get_permissions()
 
 
@@ -41,20 +49,27 @@ class CourseListApiView(ListAPIView):
 class CourseCreateApiView(CreateAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-    permission_classes = [IsAuthenticated, IsModer]
+    permission_classes = [IsAuthenticated, ~IsModer]
+
+    def perform_create(self, serializer):
+        course = serializer.save()
+        course.owner = self.request.user
+        course.save()
 
 
 class CourseRetrieveApiView(RetrieveAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
+    permission_classes = [IsAuthenticated, IsModer | IsOwner]
 
 
 class CourseUpdateApiView(UpdateAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
+    permission_classes = [IsAuthenticated, IsModer | IsOwner]
 
 
 class CourseDestroyApiView(DestroyAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-    permission_classes = [IsAuthenticated, IsModer]
+    permission_classes = [IsAuthenticated, IsOwner, ~IsModer]
