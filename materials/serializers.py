@@ -8,7 +8,7 @@ from users.models import Subscription
 
 
 class LessonSerializer(serializers.ModelSerializer):
-    url = serializers.URLField(validators= [validate_forbidden_words])
+    url = serializers.URLField(validators= [validate_forbidden_words], required=False, allow_blank=True)
 
     class Meta:
         model = Lesson
@@ -31,7 +31,7 @@ class LessonDetailSerializer(serializers.ModelSerializer):
 
 class CourseSerializer(serializers.ModelSerializer):
     lessons = LessonDetailSerializer(many=True, read_only=True)
-    subscript_course = SerializerMethodField()
+    subscription = SerializerMethodField()
 
     def get_subscription(self, obj):
         user = self.context['request'].user

@@ -41,13 +41,14 @@ class LessonViewSet(ModelViewSet):
             self.permission_classes = (~IsModer | IsOwner,)
         return super().get_permissions()
 
-    permission_classes = CustomPagination
+    pagination_class = CustomPagination
+    permission_classes = [IsAuthenticated]
 
 
 class CourseListApiView(ListAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-    permission_classes = CustomPagination
+    permission_classes = [CustomPagination]
 
 
 class CourseCreateApiView(CreateAPIView):
@@ -76,4 +77,4 @@ class CourseUpdateApiView(UpdateAPIView):
 class CourseDestroyApiView(DestroyAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-    permission_classes = [IsAuthenticated, IsOwner, ~IsModer]
+#    permission_classes = [IsAuthenticated, IsOwner, ~IsModer]
