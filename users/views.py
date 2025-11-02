@@ -1,8 +1,13 @@
+from django.shortcuts import get_object_or_404
+from rest_framework.response import Response
 from rest_framework import filters
 from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveAPIView, UpdateAPIView, DestroyAPIView
 from rest_framework.permissions import AllowAny
-from users.models import Payment, User
-from users.serializers import PaymentSerializer, UserSerializer
+from rest_framework.views import APIView
+from users.models import Payment, User, Subscription
+from materials.models import Course
+from users.serializers import PaymentSerializer, UserSerializer, SubscriptionSerializer
+from materials.serializers import CourseSerializer
 
 
 class UserListApiView(ListAPIView):
@@ -63,3 +68,31 @@ class PaymentUpdateApiView(UpdateAPIView):
 class PaymentDestroyApiView(DestroyAPIView):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
+
+
+class SubscriptionApiView(APIView):
+    serializer_class = SubscriptionSerializer
+
+    def post(self, *args, **kwargs):
+        ''' получаем пользователя '''
+        user = self.request.user
+        '''получаем id курса'''
+        course_id = self.request.data['course_id']
+        ''' получаем объект курса из базы'''
+        course = get_object_or_404(Course, id=course_id)
+        '''получаем объекты подписок по текущему пользователю и курсу'''
+        subs_item = Subscription.objects.filter(user=user, course=course)
+
+        if subs_item.exists():
+            subs_item.delete()
+            message = 'подписка удалена'
+        else:
+            Subscription.objects.create(user=user, course=course)
+            message = 'Подписка добавлена'
+        ''' возвращаем ответ в API '''
+        return Response({"message": message})
+
+    def get(self, request, *args, **kwargs):
+        course = self.get_object()
+        serializer = CourseSerializer(course, context={'request': request})
+        return Response(serializer.data)

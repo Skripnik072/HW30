@@ -4,6 +4,8 @@ from rest_framework import serializers
 from materials.models import Course, Lesson
 from materials.validators import validate_forbidden_words
 
+from users.models import Subscription
+
 
 class LessonSerializer(serializers.ModelSerializer):
     url = serializers.URLField(validators= [validate_forbidden_words])
@@ -29,6 +31,14 @@ class LessonDetailSerializer(serializers.ModelSerializer):
 
 class CourseSerializer(serializers.ModelSerializer):
     lessons = LessonDetailSerializer(many=True, read_only=True)
+    subscript_course = SerializerMethodField()
+
+    def get_subscription(self, obj):
+        user = self.context['request'].user
+        if Subscription.objects.filter(user=user, course=obj).exists():
+            return True
+        else:
+            return False
 
     class Meta:
         model = Course

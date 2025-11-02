@@ -15,6 +15,7 @@ from materials.serializers import (
     LessonDetailSerializer,
 )
 from users.permissions import IsModer, IsOwner
+from materials.paginations import CustomPagination
 
 
 class LessonViewSet(ModelViewSet):
@@ -40,10 +41,13 @@ class LessonViewSet(ModelViewSet):
             self.permission_classes = (~IsModer | IsOwner,)
         return super().get_permissions()
 
+    permission_classes = CustomPagination
+
 
 class CourseListApiView(ListAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
+    permission_classes = CustomPagination
 
 
 class CourseCreateApiView(CreateAPIView):
