@@ -14,7 +14,8 @@ from users.views import (
     UserUpdateApiView,
     UserRetrieveApiView,
     UserDestroyApiView,
-    SubscriptionApiView
+    SubscriptionApiView,
+    PaymcourseCreateApiView,
 )
 
 app_name = UsersConfig.name
@@ -46,4 +47,5 @@ urlpatterns = [
         "users/<int:pk>/update/", UserUpdateApiView.as_view(), name="users_update"
     ),
     path("subscrition/", SubscriptionApiView.as_view(), name="subscrition_list"),
+    path("paymcourse/", PaymcourseCreateApiView.as_view(), name="paymcourse"),
 ]

@@ -98,3 +98,44 @@ class Subscription(models.Model):
     class Meta:
         verbose_name = "Подписка"
         verbose_name_plural = "Подписки"
+
+class Paymcourse(models.Model):
+    amount = models.PositiveIntegerField(
+        verbose_name="Оплата за курс",
+        help_text="Укажите сумму оплаты за курс",
+    )
+    session_id = models.CharField(
+        max_length=255,
+        verbose_name="Id сессии",
+        blank=True,
+        null=True,
+        help_text="Укажите Id сессии",
+    )
+    link = models.URLField(
+        max_length=400,
+        verbose_name="Ссылка на оплату",
+        blank=True,
+        null=True,
+        help_text="Укажите ссылку на оплату",
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        verbose_name="Плательщик",
+        help_text="Укажите плательщика",
+    )
+    course = models.ForeignKey(
+        'materials.Course',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        verbose_name="Оплаченный курс",
+    )
+    class Meta:
+        verbose_name = "Оплата"
+        verbose_name_plural = "Оплаты"
+
+    def __str__(self):
+        return self.amount

@@ -19,6 +19,7 @@ from materials.paginations import CustomPagination
 
 
 class LessonViewSet(ModelViewSet):
+    '''Вьсет для операций CRUD по урокам'''
     queryset = Lesson.objects.all()
 
     def get_serializer_class(self):
@@ -46,12 +47,14 @@ class LessonViewSet(ModelViewSet):
 
 
 class CourseListApiView(ListAPIView):
+    '''Дженерик для вывода списка курсов'''
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     permission_classes = [CustomPagination]
 
 
 class CourseCreateApiView(CreateAPIView):
+    '''Дженерик для создания курса'''
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     permission_classes = [IsAuthenticated, ~IsModer]
@@ -63,18 +66,21 @@ class CourseCreateApiView(CreateAPIView):
 
 
 class CourseRetrieveApiView(RetrieveAPIView):
+    """Дженерик для получения курса из модели"""
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     permission_classes = [IsAuthenticated, IsModer | IsOwner]
 
 
 class CourseUpdateApiView(UpdateAPIView):
+    '''Дженерик для обновления курса'''
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     permission_classes = [IsAuthenticated, IsModer | IsOwner]
 
 
 class CourseDestroyApiView(DestroyAPIView):
+    '''Дженерик для удаления курса'''
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
 #    permission_classes = [IsAuthenticated, IsOwner, ~IsModer]

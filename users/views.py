@@ -4,18 +4,21 @@ from rest_framework import filters
 from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveAPIView, UpdateAPIView, DestroyAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
-from users.models import Payment, User, Subscription
+from users.models import Payment, User, Subscription,Paymcourse
 from materials.models import Course
-from users.serializers import PaymentSerializer, UserSerializer, SubscriptionSerializer
+from users.serializers import PaymentSerializer, UserSerializer, SubscriptionSerializer,PaymcourseSerializer
 from materials.serializers import CourseSerializer
+from users.services import create_stripe_product, create_stripe_price, create_stripe_session
 
 
 class UserListApiView(ListAPIView):
+    '''Дженерик для просмотра списка пользователей'''
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
 
 class UserCreateApiView(CreateAPIView):
+    '''Дженерик для создания пользователя'''
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (AllowAny,)
@@ -28,21 +31,25 @@ class UserCreateApiView(CreateAPIView):
 
 
 class UserRetrieveApiView(RetrieveAPIView):
+    '''Дженерик для получения пользователя'''
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
 
 class UserUpdateApiView(UpdateAPIView):
+    '''Дженерик для обновления пользователя'''
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
 
 class UserDestroyApiView(DestroyAPIView):
+    '''Дженерик для удаления пользователя'''
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
 
 class PaymentListApiView(ListAPIView):
+    '''Дженерик для просмотра платежей'''
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
     filter_backends = [filters.OrderingFilter]
@@ -51,26 +58,31 @@ class PaymentListApiView(ListAPIView):
 
 
 class PaymentCreateApiView(CreateAPIView):
+    '''Дженерик для создания платежа'''
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
 
 
 class PaymentRetrieveApiView(RetrieveAPIView):
+    '''Дженерик для получения платежа'''
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
 
 
 class PaymentUpdateApiView(UpdateAPIView):
+    '''Дженерик для обоновления платежа'''
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
 
 
 class PaymentDestroyApiView(DestroyAPIView):
+    '''Дженерик для удаления платежа'''
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
 
 
 class SubscriptionApiView(APIView):
+    '''Дженерик для работы с подписками на курс'''
     serializer_class = SubscriptionSerializer
 
     def post(self, *args, **kwargs):
@@ -96,3 +108,18 @@ class SubscriptionApiView(APIView):
         course = self.get_object()
         serializer = CourseSerializer(course, context={'request': request})
         return Response(serializer.data)
+
+class PaymcourseCreateApiView(CreateAPIView):
+    '''Дженерик для создания оплаты за курс'''
+    queryset = Paymcourse.objects.all()
+    serializer_class = PaymcourseSerializer
+
+    def perform_create(self, serializer):
+        payment = serializer.save(user=self.request.user)
+        price = create_stripe_price(payment.amount)
+        session_id, payment_link = create_stripe_session(price)
+        product = create_stripe_product(payment.course)
+        payment_course = product
+        payment_session_id = session_id
+        payment_link = payment_link
+        payment.save()
