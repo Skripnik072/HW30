@@ -1,14 +1,18 @@
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework import filters
-from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveAPIView, UpdateAPIView, DestroyAPIView
+from rest_framework.generics import (ListAPIView, CreateAPIView,
+    RetrieveAPIView, UpdateAPIView, DestroyAPIView)
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from users.models import Payment, User, Subscription,Paymcourse
 from materials.models import Course
-from users.serializers import PaymentSerializer, UserSerializer, SubscriptionSerializer,PaymcourseSerializer
+from users.serializers import (PaymentSerializer, UserSerializer,
+    SubscriptionSerializer,PaymcourseSerializer)
 from materials.serializers import CourseSerializer
 from users.services import create_stripe_product, create_stripe_price, create_stripe_session
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
 
 class UserListApiView(ListAPIView):
@@ -16,7 +20,7 @@ class UserListApiView(ListAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
-
+@method_decorator(csrf_exempt, name='dispatch')
 class UserCreateApiView(CreateAPIView):
     '''Дженерик для создания пользователя'''
     queryset = User.objects.all()
@@ -24,10 +28,10 @@ class UserCreateApiView(CreateAPIView):
     permission_classes = (AllowAny,)
 
 
-    def perform_create(self, serializer):
-        user = serializer.save(is_active=True)
-        user.set_password(user.password)
-        user.save()
+    # def perform_create(self, serializer):
+    #     user = serializer.save(is_active=True)
+    #     user.set_password(user.password)
+    #     user.save()
 
 
 class UserRetrieveApiView(RetrieveAPIView):
@@ -113,6 +117,7 @@ class PaymcourseCreateApiView(CreateAPIView):
     '''Дженерик для создания оплаты за курс'''
     queryset = Paymcourse.objects.all()
     serializer_class = PaymcourseSerializer
+    permission_classes = (AllowAny,)
 
     def perform_create(self, serializer):
         payment = serializer.save(user=self.request.user)
