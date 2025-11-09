@@ -14,6 +14,7 @@ from materials.serializers import (
     LessonSerializer,
     LessonDetailSerializer,
 )
+from materials.tasks import send_update
 from users.permissions import IsModer, IsOwner
 from materials.paginations import CustomPagination
 
@@ -77,6 +78,11 @@ class CourseUpdateApiView(UpdateAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     permission_classes = [IsAuthenticated, IsModer | IsOwner]
+
+    def perform_update(self, serializer):
+        course = serializer.save()
+        result = send_update().delay(course.id)
+        return result
 
 
 class CourseDestroyApiView(DestroyAPIView):

@@ -3,10 +3,7 @@ from rest_framework.serializers import ModelSerializer
 from rest_framework.validators import UniqueValidator
 from users.models import Payment, User,Subscription, Paymcourse
 
-# class UserSerializer(ModelSerializer):
-#     class Meta:
-#         model = User
-#         fields = "__all__"
+
 class UserSerializer(ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
     email = serializers.EmailField(
@@ -16,7 +13,7 @@ class UserSerializer(ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'password', 'first_name', 'last_name', 'phone', 'avatar', 'city']
+        fields = ['id', 'email', 'password', 'username', 'phone', 'avatar', 'city']
         extra_kwargs = {
             'password': {'write_only': True},
         }

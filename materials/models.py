@@ -35,6 +35,12 @@ class Course(models.Model):
         help_text="Укажите владельца курса",
     )
 
+    last_updated = models.DateTimeField(
+        auto_now=True,
+        blank=True,
+        null=True,
+        verbose_name="Время последнего обновления",)
+
     class Meta:
         verbose_name = "Курс"
         verbose_name_plural = "Курсы"
@@ -85,7 +91,6 @@ class Lesson(models.Model):
         upload_to="materials/media",
         blank=True,
         null=True,
-        verbose_name="Видео",
         help_text="Загрузите видео",
     )
 
