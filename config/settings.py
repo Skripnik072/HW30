@@ -6,7 +6,6 @@ from django.conf.global_settings import EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_PASSW
     SERVER_EMAIL, DEFAULT_FROM_EMAIL
 from dotenv import load_dotenv
 
-import materials.tasks
 
 load_dotenv()
 
@@ -157,7 +156,7 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_BEAT_SCHEDULE = {
     "deactivate_users": {
         "task": "materials.tasks.deactivate_users",
-        "schedule": timedelta(days=1),
+        "schedule": timedelta(seconds=10),
     }
 }
 
