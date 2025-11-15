@@ -6,7 +6,7 @@ from rest_framework.generics import (
     UpdateAPIView,
 )
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from materials.models import Course, Lesson
 from materials.serializers import (
@@ -58,7 +58,7 @@ class CourseCreateApiView(CreateAPIView):
     '''Дженерик для создания курса'''
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-    permission_classes = [IsAuthenticated, ~IsModer]
+    permission_classes = [AllowAny,]
 
     def perform_create(self, serializer):
         course = serializer.save()
@@ -70,14 +70,14 @@ class CourseRetrieveApiView(RetrieveAPIView):
     """Дженерик для получения курса из модели"""
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-    permission_classes = [IsAuthenticated, IsModer | IsOwner]
+    permission_classes = [AllowAny,]
 
 
 class CourseUpdateApiView(UpdateAPIView):
     '''Дженерик для обновления курса'''
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-    permission_classes = [IsAuthenticated, IsModer | IsOwner]
+    permission_classes = [AllowAny,]
 
     def perform_update(self, serializer):
         course = serializer.save()
@@ -89,4 +89,4 @@ class CourseDestroyApiView(DestroyAPIView):
     '''Дженерик для удаления курса'''
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-#    permission_classes = [IsAuthenticated, IsOwner, ~IsModer]
+    permission_classes = [AllowAny,]
