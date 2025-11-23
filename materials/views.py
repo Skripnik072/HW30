@@ -81,7 +81,7 @@ class CourseUpdateApiView(UpdateAPIView):
 
     def perform_update(self, serializer):
         course = serializer.save()
-        result = send_update().delay(course.id)
+        result = send_update(course_id=course.id).delay(course.id)
         return result
 
 
