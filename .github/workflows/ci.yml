@@ -52,7 +52,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          poetry install --no-interaction --no-ansi
+          poetry install --no-interaction --no-ansi --no-root
 
       - name: Run migrations
         env:
@@ -113,7 +113,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
             cd ${{ secrets.DEPLOY_DIR }}
-            python3 -m venv venv || true
+            python -m venv venv || true
             source venv/bin/activate
             pip install --upgrade pip
             pip install poetry
