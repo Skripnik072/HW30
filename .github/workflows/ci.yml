@@ -80,10 +80,10 @@ jobs:
           PASSWORD: testpass
           HOST: localhost
           PORT: "5432"
+          DJANGO_SETTINGS_MODULE: config.settings
           STRIPE_API_KEY: test-stripe-key
           CELERY_BROKER_URL: redis://localhost:6379
           CELERY_RESULT_BACKEND: redis://localhost:6379
-          DJANGO_SETTINGS_MODULE: config.settings
         run: |
           poetry run python manage.py test
 
