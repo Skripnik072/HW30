@@ -107,7 +107,7 @@ jobs:
           echo "Event name: ${{ github.event_name }}"
 
       - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.8.1
+        uses: webfactory/ssh-agent@v0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
