@@ -52,83 +52,93 @@ jobs:
 
       - name: Install dependencies
         run: |
-          poetry install --no-interaction --no-ansi
+          poetry install --no-interaction --no-ansi --no-root
 
       - name: Run migrations
         env:
           SECRET_KEY: test-secret-key-for-ci
           DEBUG: "True"
+          ALLOWED_HOSTS: "*"
           NAME: testdb
           USER: testuser
           PASSWORD: testpass
           HOST: localhost
           PORT: "5432"
           STRIPE_API_KEY: test-stripe-key
-          run: |
-            poetry run python manage.py migrate
+          CELERY_BROKER_URL: redis://localhost:6379
+          CELERY_RESULT_BACKEND: redis://localhost:6379
+        run: |
+          poetry run python manage.py migrate
 
       - name: Run tests
         env:
           SECRET_KEY: test-secret-key-for-ci
           DEBUG: "True"
+          ALLOWED_HOSTS: "*"
           NAME: testdb
           USER: testuser
           PASSWORD: testpass
           HOST: localhost
           PORT: "5432"
+          DJANGO_SETTINGS_MODULE: config.settings
           STRIPE_API_KEY: test-stripe-key
-          run: |
-            poetry run python manage.py test
+          CELERY_BROKER_URL: redis://localhost:6379
+          CELERY_RESULT_BACKEND: redis://localhost:6379
+        run: |
+          poetry run python manage.py test
 
-deploy:
-  runs-on: ubuntu-latest
-  needs: test
-  if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
 
-  steps:
-  - name: Set up SSH
-    uses: webfactory/ssh-agent@v0.8.1
-    with:
-      ssh-private-key: ${{ secrets.SSH_KEY }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
 
-  - name: Install rsync
-    run: |
-      sudo apt-get update
-      sudo apt-get install -y rsync
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.8.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
 
-  - name: Copy project files to server
-    run: |
-      rsync -avz --exclude '__pycache__' . ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.DEPLOY_DIR }}
+      - name: Install rsync
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rsync
 
-  - name: Install dependencies on server
-    run: |
-      ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-        cd ${{ secrets.DEPLOY_DIR }}
-        python -m venv venv || true
-        source venv/bin/activate
-        pip install --upgrade pip
-        pip install poetry
-        poetry install --no-interaction --no-ansi
-      EOF
+      - name: Copy project files to server
+        run: |
+          rsync -avz --exclude '__pycache__' --exclude '.git' --exclude 'venv' --exclude '.venv' --exclude '*.pyc' . ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.DEPLOY_DIR }}
 
-  - name: Apply migrations on server
-    run: |
-      ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-        cd ${{ secrets.DEPLOY_DIR }}
-        source venv/bin/activate
-        python manage.py migrate
-      EOF
+      - name: Install dependencies on server
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+            cd ${{ secrets.DEPLOY_DIR }}
+            python -m venv venv || true
+            source venv/bin/activate
+            pip install --upgrade pip
+            pip install poetry
+            poetry install --no-interaction --no-ansi
+          EOF
 
-  - name: Collect static files on server
-    run: |
-      ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-        cd ${{ secrets.DEPLOY_DIR }}
-        source venv/bin/activate
-        python manage.py collectstatic --noinput
-      EOF
+      - name: Apply migrations on server
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+            cd ${{ secrets.DEPLOY_DIR }}
+            source venv/bin/activate
+            python manage.py migrate
+          EOF
 
-  - name: Restart application
-    run: |
-      ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-        sudo systemctl restart myapp.service
-      EOF
+      - name: Collect static files on server
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+            cd ${{ secrets.DEPLOY_DIR }}
+            source venv/bin/activate
+            python manage.py collectstatic --noinput
+          EOF
+
+      - name: Restart application
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+            sudo systemctl restart myapp.service || true
+          EOF
