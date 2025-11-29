@@ -1,8 +1,8 @@
-name: Django CI/CD
+ame: Django CI/CD
 
 on:
   push:
-    branches: [ main, master, homework30 ]
+    branches: [ main, master, homework30, develop ]
   pull_request:
     branches: [ main, master, homework30 ]
 
@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -46,12 +46,17 @@ jobs:
 
       - name: Install Poetry
         run: |
-          curl -sSL https://install.python-poetry.org | python3 -
+          curl -sSL https://install.python-poetry.org | python -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
 
       - name: Install dependencies
         run: |
-          poetry install --no-interaction --no-ansi
+          poetry install --no-interaction --no-ansi --no-root
 
       - name: Run migrations
         env:
@@ -79,6 +84,7 @@ jobs:
           PASSWORD: testpass
           HOST: localhost
           PORT: "5432"
+          DJANGO_SETTINGS_MODULE: config.settings
           STRIPE_API_KEY: test-stripe-key
           CELERY_BROKER_URL: redis://localhost:6379
           CELERY_RESULT_BACKEND: redis://localhost:6379
@@ -88,34 +94,33 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: test
+    # Добавил homework30 в условие
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/homework30'
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Debug info
+      - name: Debug branch info
         run: |
-          echo "Branch: ${{ github.ref }}"
-          echo "Event: ${{ github.event_name }}"
-          echo "SSH User: ${{ secrets.SSH_USER }}"
-          echo "Server IP: ${{ secrets.SERVER_IP }}"
+          echo "Current branch: ${{ github.ref }}"
+          echo "Event name: ${{ github.event_name }}"
 
-      - name: Setup SSH
+      - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Test SSH connection with verbose output
-        run: |
-          ssh -vvv -o StrictHostKeyChecking=no -o ConnectTimeout=30 ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "echo '✅ SSH connection successful'"
+          ssh-private-key: ${{ secrets.SSH_KEY }}
 
       - name: Install rsync
         run: |
           sudo apt-get update
           sudo apt-get install -y rsync
 
-      - name: Deploy files
+      - name: Test SSH connection
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "echo 'SSH connection successful'"
+
+      - name: Copy project files to server
         run: |
           rsync -avz \
             --exclude '__pycache__' \
@@ -124,40 +129,41 @@ jobs:
             --exclude '.venv' \
             --exclude '*.pyc' \
             --exclude '.env' \
-            --exclude 'db.sqlite3' \
-            --exclude 'coverage_report' \
             . ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.DEPLOY_DIR }}
 
-      - name: Setup server environment
+      - name: Install dependencies on server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-            set -e
             cd ${{ secrets.DEPLOY_DIR }}
-            
-            # Create venv if not exists
-            python3 -m venv venv --clear
-            
-            # Activate and install dependencies
+            python3 -m venv venv || true
             source venv/bin/activate
             pip install --upgrade pip
-            pip install -r requirements.txt 2>/dev/null || pip install poetry
-            poetry install --no-dev --no-interaction
-            
-            # Django setup
-            python manage.py migrate
-            python manage.py collectstatic --noinput
-            
-            echo "✅ Server setup completed"
+            pip install poetry
+            poetry install --no-interaction --no-ansi --no-root
           EOF
 
-      - name: Restart services
+      - name: Apply migrations on server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-            # Try to restart common service names
-            sudo systemctl restart nginx 2>/dev/null || echo "nginx not found"
-            sudo systemctl restart gunicorn 2>/dev/null || echo "gunicorn not found"
-            sudo systemctl restart myapp 2>/dev/null || echo "myapp not found"
-            sudo systemctl restart celery 2>/dev/null || echo "celery not found"
-            
-            echo "✅ Services restarted"
+            cd ${{ secrets.DEPLOY_DIR }}
+            source venv/bin/activate
+            python manage.py migrate
           EOF
+
+      - name: Collect static files on server
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+            cd ${{ secrets.DEPLOY_DIR }}
+            source venv/bin/activate
+            python manage.py collectstatic --noinput
+          EOF
+
+      - name: Restart application
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+            sudo systemctl restart myapp.service || echo "Service might not exist, continuing..."
+          EOF
+
+      - name: Deploy success
+        run: |
+          echo "✅ Deployment completed successfully to branch: ${{ github.ref }}"
