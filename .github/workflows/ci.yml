@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -56,7 +56,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          poetry install --no-interaction --no-ansi --no-root
+          poetry install --no-interaction --no-ansi
 
       - name: Run migrations
         env:
@@ -99,26 +99,28 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Debug branch info
         run: |
           echo "Current branch: ${{ github.ref }}"
           echo "Event name: ${{ github.event_name }}"
+          echo "SSH User: ${{ secrets.SSH_USER }}"
+          echo "Server IP: ${{ secrets.SERVER_IP }}"
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
+      - name: Test SSH connection with verbose output
+        run: |
+          ssh -vvv -o StrictHostKeyChecking=no -o ConnectTimeout=30 ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "echo '✅ SSH connection successful'"
+
       - name: Install rsync
         run: |
           sudo apt-get update
           sudo apt-get install -y rsync
-
-      - name: Test SSH connection
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "echo 'SSH connection successful'"
 
       - name: Copy project files to server
         run: |
