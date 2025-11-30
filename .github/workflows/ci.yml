@@ -120,6 +120,9 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "echo 'SSH connection successful'"
 
+      - name: Create directory on server
+        run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "mkdir -p /home/ubuntu/app"
+
       - name: Copy project files to server
         run: |
           rsync -avz \
