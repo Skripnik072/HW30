@@ -142,6 +142,7 @@ jobs:
             source venv/bin/activate
             pip install --upgrade pip
             pip install poetry
+            poetry env use /home/ubuntu/app/python3.13
             poetry install --no-interaction --no-ansi --no-root
           EOF
 
