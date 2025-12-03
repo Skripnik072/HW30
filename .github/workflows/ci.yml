@@ -152,7 +152,7 @@ jobs:
 
       - name: Install dependencies on server
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -t ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
             set -e
             cd ${{ secrets.DEPLOY_DIR }}
             
