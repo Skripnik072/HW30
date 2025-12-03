@@ -120,6 +120,9 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "echo 'SSH connection successful'"
 
+      - name: Create directory on server
+        run: ssh ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "sudo mkdir -p /home/ubuntu/app"
+
       - name: Copy project files to server
         run: |
           rsync -avz \
@@ -134,29 +137,41 @@ jobs:
       - name: Install dependencies on server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+            set -e
             cd ${{ secrets.DEPLOY_DIR }}
-            python -m venv venv || true
+            # Проверяем наличие python3
+            if ! command -v python3 &> /dev/null; then
+              echo "Python3 not found, installing..."
+              sudo apt-get update
+              sudo apt-get install -y python3 python3-pip python3-venv
+            fi
+            # Создаем виртуальное окружение
+            python3 -m venv venv
             source venv/bin/activate
-            pip install --upgrade pip
+            # Обновляем pip
+            python3 -m pip install --upgrade pip
+            # Устанавливаем poetry
             pip install poetry
-            poetry env use /home/ubuntu/app/python3.13
+            # Устанавливаем зависимости
             poetry install --no-interaction --no-ansi --no-root
           EOF
 
       - name: Apply migrations on server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+            set -e
             cd ${{ secrets.DEPLOY_DIR }}
             source venv/bin/activate
-            python manage.py migrate
+            python3 manage.py migrate
           EOF
 
       - name: Collect static files on server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+            set -e
             cd ${{ secrets.DEPLOY_DIR }}
             source venv/bin/activate
-            python manage.py collectstatic --noinput
+            python3 manage.py collectstatic --noinput
           EOF
 
       - name: Restart application
