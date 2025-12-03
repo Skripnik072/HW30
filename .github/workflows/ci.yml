@@ -152,7 +152,7 @@ jobs:
 
       - name: Install dependencies on server
         run: |
-          ssh -o StrictHostKeyChecking=no -t ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
             set -e
             cd ${{ secrets.DEPLOY_DIR }}
             
@@ -167,14 +167,14 @@ jobs:
             fi
             
             # Создаем виртуальное окружение с Python 3.13
-            python -m venv venv --clear
+            python3.13 -m venv venv --clear
             source venv/bin/activate
             
             # Проверяем версию Python в venv
             python --version
             
             # Обновляем pip
-            C:\Users\it-pc.ru\AppData\Local\Programs\Python\Python313\python.exe -m pip install --upgrade pip
+            python -m pip install --upgrade pip
             
             # Устанавливаем poetry
             pip install poetry
