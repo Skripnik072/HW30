@@ -174,7 +174,7 @@ jobs:
             python --version
             
             # Обновляем pip
-            python -m pip install --upgrade pip
+            C:\Users\it-pc.ru\AppData\Local\Programs\Python\Python313\python.exe -m pip install --upgrade pip
             
             # Устанавливаем poetry
             pip install poetry
