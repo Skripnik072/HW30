@@ -156,15 +156,15 @@ jobs:
             set -e
             cd ${{ secrets.DEPLOY_DIR }}
             
-            # Проверяем наличие Python 3.13
-            if ! command -v python &> /dev/null; then
-              echo "Python 3.13 not found, installing..."
-              sudo apt-get update
-              sudo apt-get install -y software-properties-common
-              sudo add-apt-repository -y ppa:deadsnakes/ppa
-              sudo apt-get update
-              sudo apt-get install -y python python-venv
-            fi
+#            # Проверяем наличие Python 3.13
+#            if ! command -v python &> /dev/null; then
+#              echo "Python 3.13 not found, installing..."
+#              sudo apt-get update
+#              sudo apt-get install -y software-properties-common
+#              sudo add-apt-repository -y ppa:deadsnakes/ppa
+#              sudo apt-get update
+#              sudo apt-get install -y python python-venv
+#            fi
             
             # Создаем виртуальное окружение с Python 3.13
             python -m venv venv --clear
