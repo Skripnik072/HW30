@@ -1,7 +1,6 @@
 name: Django CI/CD
 
 
-
 on:
   push:
     branches: [ main, master, homework30, develop ]
@@ -9,11 +8,9 @@ on:
     branches: [ main, master, homework30 ]
 
 
-
 jobs:
   test:
     runs-on: ubuntu-latest
-
 
 
     services:
@@ -32,7 +29,6 @@ jobs:
           - 5432:5432
 
 
-
       redis:
         image: redis:7
         options: >-
@@ -44,11 +40,9 @@ jobs:
           - 6379:6379
 
 
-
     steps:
       - name: Check out code
         uses: actions/checkout@v3
-
 
 
       - name: Set up Python
@@ -57,12 +51,10 @@ jobs:
           python-version: '3.13'
 
 
-
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-
 
 
       - name: Install system dependencies
@@ -71,11 +63,9 @@ jobs:
           sudo apt-get install -y postgresql-client
 
 
-
       - name: Install dependencies
         run: |
           poetry install --no-interaction --no-ansi --no-root
-
 
 
       - name: Run migrations
@@ -93,7 +83,6 @@ jobs:
           CELERY_RESULT_BACKEND: redis://localhost:6379
         run: |
           poetry run python manage.py migrate
-
 
 
       - name: Run tests
@@ -114,7 +103,6 @@ jobs:
           poetry run python manage.py test
 
 
-
   deploy:
     runs-on: ubuntu-latest
     needs: test
@@ -122,11 +110,9 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/homework30'
 
 
-
     steps:
       - name: Check out code
         uses: actions/checkout@v3
-
 
 
       - name: Debug branch info
@@ -135,12 +121,10 @@ jobs:
           echo "Event name: ${{ github.event_name }}"
 
 
-
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
-
 
 
       - name: Install rsync
@@ -149,11 +133,9 @@ jobs:
           sudo apt-get install -y rsync
 
 
-
       - name: Test SSH connection
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "echo 'SSH connection successful'"
-
 
 
       - name: Copy project files to server
@@ -168,7 +150,6 @@ jobs:
             . ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.DEPLOY_DIR }}
 
 
-
       - name: Install dependencies on server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
@@ -176,17 +157,17 @@ jobs:
             cd ${{ secrets.DEPLOY_DIR }}
             
             # Проверяем наличие Python 3.13
-            if ! command -v python3.13 &> /dev/null; then
+            if ! command -v python &> /dev/null; then
               echo "Python 3.13 not found, installing..."
               sudo apt-get update
               sudo apt-get install -y software-properties-common
               sudo add-apt-repository -y ppa:deadsnakes/ppa
               sudo apt-get update
-              sudo apt-get install -y python3.13 python3.13-venv python3.13-dev python3.13-distutils
+              sudo apt-get install -y python python-venv python-dev python-distutils
             fi
             
             # Создаем виртуальное окружение с Python 3.13
-            python3.13 -m venv venv --clear
+            python -m venv venv --clear
             source venv/bin/activate
             
             # Проверяем версию Python в venv
@@ -198,10 +179,9 @@ jobs:
             # Устанавливаем poetry
             pip install poetry
             
-            # Устанавливаем зависимости проекта
+             # Устанавливаем зависимости проекта
             poetry install --no-interaction --no-ansi --no-root
           EOF
-
 
 
       - name: Apply migrations on server
@@ -213,7 +193,6 @@ jobs:
           EOF
 
 
-
       - name: Collect static files on server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
@@ -223,13 +202,11 @@ jobs:
           EOF
 
 
-
       - name: Restart application
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
             sudo systemctl restart myapp.service || echo "Service might not exist, continuing..."
           EOF
-
 
 
       - name: Deploy success
