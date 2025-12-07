@@ -197,26 +197,57 @@ jobs:
             set -e
             cd ${{ secrets.DEPLOY_DIR }}
  
-            # Определяем команду docker-compose (новый или старый синтаксис)
-            if docker compose version &> /dev/null; then
-              DOCKER_COMPOSE="docker compose"
-            elif command -v docker-compose &> /dev/null; then
-              DOCKER_COMPOSE="docker-compose"
-            else
-              echo "Error: docker-compose is not installed"
+            # Проверяем наличие Docker
+            if ! command -v docker &> /dev/null 2>&1; then
+              echo "Error: Docker is not installed. Please install Docker first."
               exit 1
+            fi
+ 
+            # Определяем команду docker-compose (новый или старый синтаксис)
+            # Сначала пробуем новый синтаксис docker compose (Docker Compose V2)
+            if docker compose version &> /dev/null 2>&1; then
+              DOCKER_COMPOSE="docker compose"
+              echo "Using Docker Compose V2 (docker compose)"
+            # Затем пробуем старый синтаксис docker-compose (V1)
+            elif command -v docker-compose &> /dev/null 2>&1; then
+              DOCKER_COMPOSE="docker-compose"
+              echo "Using Docker Compose V1 (docker-compose)"
+            # Если ничего не найдено, пытаемся установить docker-compose V1
+            else
+              echo "Docker Compose not found, attempting to install..."
+              sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+              if command -v docker-compose &> /dev/null 2>&1; then
+                DOCKER_COMPOSE="docker-compose"
+                echo "Docker Compose V1 installed successfully"
+              else
+                echo "Error: Failed to install docker-compose. Please install Docker Compose manually."
+                exit 1
+              fi
             fi
  
             # Останавливаем и удаляем старые контейнеры
             $DOCKER_COMPOSE down || true
  
-            # Собираем и запускаем контейнеры
-            # Миграции выполняются автоматически в команде запуска контейнера web (см. docker-compose.yml)
-            $DOCKER_COMPOSE up -d --build
+            # Собираем образы
+            $DOCKER_COMPOSE build
+ 
+            # Запускаем только базу данных и redis
+            $DOCKER_COMPOSE up -d db redis
+ 
+            # Ждем пока база данных будет готова
+            echo "Waiting for database to be ready..."
+            sleep 10
+ 
+            # Выполняем миграции внутри контейнера web (который еще не запущен, но образ уже собран)
+            $DOCKER_COMPOSE run --rm web python manage.py migrate
+ 
+            # Запускаем все остальные контейнеры
+            $DOCKER_COMPOSE up -d
  
             # Ждем пока контейнеры запустятся
             echo "Waiting for containers to start..."
-            sleep 15
+            sleep 5
  
             # Выполняем collectstatic внутри контейнера
             $DOCKER_COMPOSE exec -T web python manage.py collectstatic --noinput || echo "Collectstatic completed with warnings"
