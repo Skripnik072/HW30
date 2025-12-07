@@ -3,7 +3,6 @@ name: Django CI/CD
 
 
 
-
 on:
   push:
     branches: [ main, master, homework30, develop ]
@@ -13,11 +12,9 @@ on:
 
 
 
-
 jobs:
   test:
     runs-on: ubuntu-latest
-
 
 
 
@@ -40,7 +37,6 @@ jobs:
 
 
 
-
       redis:
         image: redis:7
         options: >-
@@ -54,11 +50,9 @@ jobs:
 
 
 
-
     steps:
       - name: Check out code
         uses: actions/checkout@v3
-
 
 
 
@@ -71,32 +65,28 @@ jobs:
 
 
 
-
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-
-
-
+ 
+ 
+ 
 
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
-
-
-
-
+ 
+ 
+ 
 
       - name: Install dependencies
         run: |
           poetry install --no-interaction --no-ansi --no-root
-
-
-
-
+ 
+ 
+ 
 
       - name: Run migrations
         env:
@@ -113,10 +103,9 @@ jobs:
           CELERY_RESULT_BACKEND: redis://localhost:6379
         run: |
           poetry run python manage.py migrate
-
-
-
-
+ 
+ 
+ 
 
       - name: Run tests
         env:
@@ -134,17 +123,15 @@ jobs:
           CELERY_RESULT_BACKEND: redis://localhost:6379
         run: |
           poetry run python manage.py test
-
-
-
-
+ 
+ 
+ 
 
   deploy:
     runs-on: ubuntu-latest
     needs: test
     # Добавил homework30 в условие
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/homework30'
-
 
 
 
@@ -156,15 +143,13 @@ jobs:
 
 
 
-
       - name: Debug branch info
         run: |
           echo "Current branch: ${{ github.ref }}"
           echo "Event name: ${{ github.event_name }}"
-
-
-
-
+ 
+ 
+ 
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
@@ -174,23 +159,20 @@ jobs:
 
 
 
-
       - name: Install rsync
         run: |
           sudo apt-get update
           sudo apt-get install -y rsync
-
-
-
-
+ 
+ 
+ 
 
       - name: Test SSH connection
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "echo 'SSH connection successful'"
-
-
-
-
+ 
+ 
+ 
 
       - name: Copy project files to server
         run: |
@@ -202,17 +184,16 @@ jobs:
             --exclude '*.pyc' \
             --exclude '.env' \
             . ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.DEPLOY_DIR }}
-
-
-
-
+ 
+ 
+ 
 
       - name: Install dependencies on server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
             set -e
             cd ${{ secrets.DEPLOY_DIR }}
-            
+ 
             # Проверяем наличие Python 3.13
             if ! command -v python3.13 &> /dev/null; then
               echo "Python 3.13 not found, installing..."
@@ -226,14 +207,14 @@ jobs:
               sudo apt-get update
               sudo apt-get install -y python3.13-venv python3.13-dev python3.13-distutils python3.13-ensurepip || true
             fi
-            
+ 
             # Создаем виртуальное окружение с Python 3.13
             # Пробуем создать venv с pip, если не получается - используем --without-pip
             set +e
             python3.13 -m venv venv --clear
             VENV_EXIT_CODE=$?
             set -e
-            
+ 
             if [ $VENV_EXIT_CODE -ne 0 ]; then
               echo "Standard venv creation failed, creating venv without pip..."
               python3.13 -m venv venv --clear --without-pip
@@ -243,52 +224,54 @@ jobs:
             else
               source venv/bin/activate
             fi
-            
+ 
             # Проверяем версию Python в venv
             python --version
-            
+ 
             # Обновляем pip
             python -m pip install --upgrade pip
-            
+ 
             # Устанавливаем poetry
             pip install poetry
-            
+ 
             # Устанавливаем зависимости проекта
             poetry install --no-interaction --no-ansi --no-root
           EOF
-
-
-
-
+ 
+ 
+ 
 
       - name: Apply migrations on server
-        env:
-          DB_NAME: ${{ secrets.DB_NAME }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_PORT: ${{ secrets.DB_PORT }}
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
-          DEBUG: ${{ secrets.DEBUG }}
-          ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << EOF
+            set -e
             cd ${{ secrets.DEPLOY_DIR }}
             source venv/bin/activate
-            export NAME="${DB_NAME}"
-            export USER="${DB_USER}"
-            export PASSWORD="${DB_PASSWORD}"
-            export HOST="${DB_HOST:-localhost}"
-            export PORT="${DB_PORT:-5432}"
-            export SECRET_KEY="${SECRET_KEY}"
-            export DEBUG="${DEBUG}"
-            export ALLOWED_HOSTS="${ALLOWED_HOSTS}"
+            export NAME='${{ secrets.DB_NAME }}'
+            export USER='${{ secrets.DB_USER }}'
+            export PASSWORD='${{ secrets.DB_PASSWORD }}'
+            export HOST='${{ secrets.DB_HOST }}'
+            export PORT='${{ secrets.DB_PORT }}'
+            export SECRET_KEY='${{ secrets.SECRET_KEY }}'
+            export DEBUG='${{ secrets.DEBUG }}'
+            export ALLOWED_HOSTS='${{ secrets.ALLOWED_HOSTS }}'
+            # Set defaults if not provided
+            [ -z "\$HOST" ] && export HOST="db"
+            [ -z "\$PORT" ] && export PORT="5432"
+            # Validate required variables
+            if [ -z "\$SECRET_KEY" ]; then
+              echo "Error: SECRET_KEY is not set. Please configure it in GitHub Secrets."
+              exit 1
+            fi
+            if [ -z "\$NAME" ] || [ -z "\$USER" ] || [ -z "\$PASSWORD" ]; then
+              echo "Error: Database credentials are not set. Please configure DB_NAME, DB_USER, and DB_PASSWORD in GitHub Secrets."
+              exit 1
+            fi
             python manage.py migrate
           EOF
-
-
-
-
+ 
+ 
+ 
 
       - name: Collect static files on server
         run: |
@@ -297,22 +280,19 @@ jobs:
             source venv/bin/activate
             python manage.py collectstatic --noinput
           EOF
-
-
-
-
+ 
+ 
+ 
 
       - name: Restart application
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
             sudo systemctl restart myapp.service || echo "Service might not exist, continuing..."
           EOF
-
-
-
-
+ 
+ 
+ 
 
       - name: Deploy success
         run: |
           echo "✅ Deployment completed successfully to branch: ${{ github.ref }}"
-
