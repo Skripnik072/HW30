@@ -2,6 +2,7 @@ name: Django CI/CD
 
 
 
+
 on:
   push:
     branches: [ main, master, homework30, develop ]
@@ -10,9 +11,11 @@ on:
 
 
 
+
 jobs:
   test:
     runs-on: ubuntu-latest
+
 
 
 
@@ -33,6 +36,7 @@ jobs:
 
 
 
+
       redis:
         image: redis:7
         options: >-
@@ -45,9 +49,11 @@ jobs:
 
 
 
+
     steps:
       - name: Check out code
         uses: actions/checkout@v3
+
 
 
 
@@ -58,10 +64,12 @@ jobs:
 
 
 
+
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+
 
 
 
@@ -72,9 +80,11 @@ jobs:
 
 
 
+
       - name: Install dependencies
         run: |
           poetry install --no-interaction --no-ansi --no-root
+
 
 
 
@@ -93,6 +103,7 @@ jobs:
           CELERY_RESULT_BACKEND: redis://localhost:6379
         run: |
           poetry run python manage.py migrate
+
 
 
 
@@ -115,6 +126,7 @@ jobs:
 
 
 
+
   deploy:
     runs-on: ubuntu-latest
     needs: test
@@ -123,9 +135,11 @@ jobs:
 
 
 
+
     steps:
       - name: Check out code
         uses: actions/checkout@v3
+
 
 
 
@@ -136,10 +150,12 @@ jobs:
 
 
 
+
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
+
 
 
 
@@ -150,9 +166,11 @@ jobs:
 
 
 
+
       - name: Test SSH connection
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "echo 'SSH connection successful'"
+
 
 
 
@@ -169,6 +187,7 @@ jobs:
 
 
 
+
       - name: Install dependencies on server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
@@ -182,12 +201,29 @@ jobs:
               sudo apt-get install -y software-properties-common
               sudo add-apt-repository -y ppa:deadsnakes/ppa
               sudo apt-get update
-              sudo apt-get install -y python3.13 python3.13-venv python3.13-dev python3.13-distutils
+              sudo apt-get install -y python3.13 python3.13-venv python3.13-dev python3.13-distutils python3.13-ensurepip
+            else
+              # Убеждаемся, что все необходимые пакеты установлены
+              sudo apt-get update
+              sudo apt-get install -y python3.13-venv python3.13-dev python3.13-distutils python3.13-ensurepip || true
             fi
             
             # Создаем виртуальное окружение с Python 3.13
+            # Пробуем создать venv с pip, если не получается - используем --without-pip
+            set +e
             python3.13 -m venv venv --clear
-            source venv/bin/activate
+            VENV_EXIT_CODE=$?
+            set -e
+            
+            if [ $VENV_EXIT_CODE -ne 0 ]; then
+              echo "Standard venv creation failed, creating venv without pip..."
+              python3.13 -m venv venv --clear --without-pip
+              source venv/bin/activate
+              # Устанавливаем pip вручную
+              curl -sS https://bootstrap.pypa.io/get-pip.py | python
+            else
+              source venv/bin/activate
+            fi
             
             # Проверяем версию Python в venv
             python --version
@@ -204,6 +240,7 @@ jobs:
 
 
 
+
       - name: Apply migrations on server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
@@ -211,6 +248,7 @@ jobs:
             source venv/bin/activate
             python manage.py migrate
           EOF
+
 
 
 
@@ -224,11 +262,13 @@ jobs:
 
 
 
+
       - name: Restart application
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
             sudo systemctl restart myapp.service || echo "Service might not exist, continuing..."
           EOF
+
 
 
 
