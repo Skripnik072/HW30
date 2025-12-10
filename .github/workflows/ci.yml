@@ -90,8 +90,8 @@ jobs:
           CELERY_RESULT_BACKEND: redis://localhost:6379
         run: |
           poetry run python manage.py test
-
-
+ 
+ 
 
   deploy:
     runs-on: ubuntu-latest
