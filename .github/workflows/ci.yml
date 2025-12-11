@@ -209,6 +209,17 @@ jobs:
             # Собираем и запускаем контейнеры
             docker compose up -d --build
  
+            # Ждем пока база данных будет готова
+            echo "Waiting for database to be ready..."
+            for i in {1..30}; do
+              if docker compose exec -T db pg_isready > /dev/null 2>&1; then
+                echo "Database is ready!"
+                break
+              fi
+              echo "Waiting for database... ($i/30)"
+              sleep 2
+            done
+ 
             # Показываем статус контейнеров
             docker compose ps
           EOF
@@ -266,17 +277,23 @@ jobs:
       - name: Apply migrations on server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+            set -e
             cd ${{ secrets.DEPLOY_DIR }}
-            source venv/bin/activate
-            python manage.py migrate
+ 
+            # Выполняем миграции внутри Docker контейнера
+            echo "Running migrations in Docker container..."
+            docker compose run --rm web python manage.py migrate
           EOF
 
       - name: Collect static files on server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+            set -e
             cd ${{ secrets.DEPLOY_DIR }}
-            source venv/bin/activate
-            python manage.py collectstatic --noinput
+ 
+            # Выполняем collectstatic внутри Docker контейнера
+            echo "Collecting static files in Docker container..."
+            docker compose run --rm web python manage.py collectstatic --noinput
           EOF
 
       - name: Restart application
