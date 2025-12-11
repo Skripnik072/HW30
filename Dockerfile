@@ -8,8 +8,8 @@ ENV POETRY_VIRTUALENVS_CREATE=False
 ENV POETRY_NO_INTERACTION=1
 ENV POETRY_CACHE_DIR=/tmp/poetry_cache
 
-COPY pyproject.toml poetry.lock ./
-RUN poetry install --no-interaction --no-ansi && rm -rf $POETRY_CACHE_DIR
+COPY pyproject.toml poetry.lock README.md ./
+RUN poetry install --no-interaction --no-ansi --no-root && rm -rf $POETRY_CACHE_DIR
 
 COPY . .
 
