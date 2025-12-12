@@ -280,7 +280,26 @@ jobs:
             set -e
             cd ${{ secrets.DEPLOY_DIR }}
  
+            # Дополнительное ожидание и проверка готовности БД
+            echo "Waiting for database to be fully ready..."
+            for i in {1..20}; do
+              if docker compose exec -T db pg_isready > /dev/null 2>&1; then
+                echo "Database is ready for connections!"
+                # Дополнительная пауза для полной готовности PostgreSQL
+                sleep 5
+                break
+              fi
+              echo "Waiting for database... ($i/20)"
+              sleep 2
+            done
+ 
+            # Проверяем, что контейнеры в одной сети
+            echo "Checking Docker network setup..."
+            docker network ls | grep -E "(default|hw30)" || true
+            docker compose ps
+ 
             # Выполняем миграции внутри Docker контейнера
+            # docker compose run автоматически использует ту же сеть что и другие сервисы
             echo "Running migrations in Docker container..."
             docker compose run --rm web python manage.py migrate
           EOF
@@ -292,6 +311,7 @@ jobs:
             cd ${{ secrets.DEPLOY_DIR }}
  
             # Выполняем collectstatic внутри Docker контейнера
+            # docker compose run автоматически использует ту же сеть
             echo "Collecting static files in Docker container..."
             docker compose run --rm web python manage.py collectstatic --noinput
           EOF
@@ -305,3 +325,4 @@ jobs:
       - name: Deploy success
         run: |
           echo "✅ Deployment completed successfully to branch: ${{ github.ref }}"
+ 
