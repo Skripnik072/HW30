@@ -206,16 +206,7 @@ jobs:
             # Останавливаем и удаляем старые контейнеры
             docker compose down || true
  
-            # Временно изменяем команду запуска web контейнера, чтобы не выполнять миграции при старте
-            # Создаем временный docker-compose файл для запуска без миграций
-            cp docker-compose.yml docker-compose.yml.backup
-            # Используем sed для изменения команды запуска
-            sed -i 's/python manage.py migrate &&/python manage.py runserver/' docker-compose.yml || \
-            sed -i 's|bash -c "python manage.py migrate &&|bash -c "python manage.py runserver|' docker-compose.yml || \
-            python3 -c "import re; content = open('docker-compose.yml').read(); open('docker-compose.yml', 'w').write(re.sub(r'bash -c \"python manage\.py migrate &&\s+python manage\.py runserver', 'bash -c \"python manage.py runserver', content))"
-            echo "Modified docker-compose.yml to skip migrations on startup"
- 
-            # Собираем и запускаем контейнеры (без миграций в команде запуска)
+            # Собираем и запускаем контейнеры
             docker compose up -d --build
  
             # Ждем пока база данных будет готова
@@ -226,17 +217,6 @@ jobs:
                 break
               fi
               echo "Waiting for database... ($i/30)"
-              sleep 2
-            done
- 
-            # Ждем пока контейнер web будет запущен
-            echo "Waiting for web container to be ready..."
-            for i in {1..30}; do
-              if docker compose ps web | grep -q "Up"; then
-                echo "Web container is ready!"
-                break
-              fi
-              echo "Waiting for web container... ($i/30)"
               sleep 2
             done
  
@@ -306,17 +286,22 @@ jobs:
               if docker compose exec -T db pg_isready > /dev/null 2>&1; then
                 echo "Database is ready for connections!"
                 # Дополнительная пауза для полной готовности PostgreSQL
-                sleep 3
+                sleep 5
                 break
               fi
               echo "Waiting for database... ($i/20)"
               sleep 2
             done
  
-            # Выполняем миграции внутри уже запущенного Docker контейнера
-            # docker compose exec использует тот же контейнер, который уже в правильной сети
+            # Проверяем, что контейнеры в одной сети
+            echo "Checking Docker network setup..."
+            docker network ls | grep -E "(default|hw30)" || true
+            docker compose ps
+ 
+            # Выполняем миграции внутри Docker контейнера
+            # docker compose run автоматически использует ту же сеть что и другие сервисы
             echo "Running migrations in Docker container..."
-            docker compose exec -T web python manage.py migrate
+            docker compose run --rm web python manage.py migrate
           EOF
 
       - name: Collect static files on server
@@ -325,27 +310,10 @@ jobs:
             set -e
             cd ${{ secrets.DEPLOY_DIR }}
  
-            # Выполняем collectstatic внутри уже запущенного Docker контейнера
-            # docker compose exec использует тот же контейнер, который уже в правильной сети
+            # Выполняем collectstatic внутри Docker контейнера
+            # docker compose run автоматически использует ту же сеть
             echo "Collecting static files in Docker container..."
-            docker compose exec -T web python manage.py collectstatic --noinput
-          EOF
-
-      - name: Restore docker-compose and restart web
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-            set -e
-            cd ${{ secrets.DEPLOY_DIR }}
- 
-            # Восстанавливаем оригинальный docker-compose.yml
-            if [ -f docker-compose.yml.backup ]; then
-              mv docker-compose.yml.backup docker-compose.yml
-              echo "Restored original docker-compose.yml"
- 
-              # Перезапускаем web контейнер с правильной командой (с миграциями)
-              echo "Restarting web container with migrations..."
-              docker compose up -d --no-deps web
-            fi
+            docker compose run --rm web python manage.py collectstatic --noinput
           EOF
 
       - name: Restart application
