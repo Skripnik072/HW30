@@ -313,6 +313,20 @@ jobs:
               sleep 2
             done
  
+            # Убедимся, что web-контейнер запущен (мог упасть после предыдущих шагов)
+            if ! docker compose ps web | grep -q "Up"; then
+              echo "Web container is not running, starting it..."
+              docker compose up -d web
+              for i in {1..20}; do
+                if docker compose ps web | grep -q "Up"; then
+                  echo "Web container is up!"
+                  break
+                fi
+                echo "Waiting for web container... ($i/20)"
+                sleep 2
+              done
+            fi
+ 
             # Выполняем миграции внутри уже запущенного Docker контейнера
             # docker compose exec использует тот же контейнер, который уже в правильной сети
             echo "Running migrations in Docker container..."
