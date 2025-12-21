@@ -99,11 +99,78 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/homework30'
 
     steps:
-      - uses: actions/checkout@v4
-      - name: Fetch updates
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Fetch updates and deploy
         run: |
-          cd /home/viktor65_ds
-          git fetch
-          git switch dev
-          git merge origin/dev
-          docker compose up --build --force-recreate -d
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+            set -e
+            cd /home/viktor65_ds
+ 
+            # Обновляем код из git
+            echo "Fetching updates from git..."
+            git fetch
+            git switch dev
+            git merge origin/dev
+ 
+            # Запускаем контейнеры (сначала db и redis, потом web)
+            echo "Starting Docker containers..."
+            docker compose up -d --build db redis
+ 
+            # Ждем пока контейнер db будет запущен
+            echo "Waiting for db container to start..."
+            for i in {1..30}; do
+              if docker compose ps db | grep -q "Up"; then
+                echo "DB container is running!"
+                break
+              fi
+              echo "Waiting for db container... ($i/30)"
+              sleep 2
+            done
+ 
+            # Ждем пока база данных будет готова к подключениям
+            echo "Waiting for database to be ready..."
+            for i in {1..60}; do
+              if docker compose exec -T db pg_isready > /dev/null 2>&1; then
+                echo "Database is ready for connections!"
+                sleep 3
+                break
+              fi
+              echo "Waiting for database... ($i/60)"
+              sleep 2
+            done
+ 
+            # Запускаем web контейнер
+            echo "Starting web container..."
+            docker compose up -d --build web
+ 
+            # Ждем пока контейнер web будет готов
+            echo "Waiting for web container to be ready..."
+            for i in {1..30}; do
+              if docker compose ps web | grep -q "Up"; then
+                echo "Web container is ready!"
+                sleep 3
+                break
+              fi
+              echo "Waiting for web container... ($i/30)"
+              sleep 2
+            done
+ 
+            # Выполняем миграции внутри Docker контейнера
+            echo "Running migrations in Docker container..."
+            docker compose exec -T web python manage.py migrate
+ 
+            # Собираем статические файлы
+            echo "Collecting static files..."
+            docker compose exec -T web python manage.py collectstatic --noinput
+          EOF
+
+      - name: Deploy success
+        run: |
+          echo "✅ Deployment completed successfully to branch: ${{ github.ref }}"
