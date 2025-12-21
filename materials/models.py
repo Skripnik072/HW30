@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 
 class Course(models.Model):
@@ -9,6 +10,7 @@ class Course(models.Model):
         verbose_name="Курс",
         help_text="Введите название курса",
     )
+
     description = models.TextField(
         blank=True,
         null=True,
@@ -24,6 +26,21 @@ class Course(models.Model):
         help_text="Загрузите картинку",
     )
 
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        verbose_name="Владелец курса",
+        blank=True,
+        null=True,
+        help_text="Укажите владельца курса",
+    )
+
+    last_updated = models.DateTimeField(
+        auto_now=True,
+        blank=True,
+        null=True,
+        verbose_name="Время последнего обновления",)
+
     class Meta:
         verbose_name = "Курс"
         verbose_name_plural = "Курсы"
@@ -35,6 +52,7 @@ class Lesson(models.Model):
     name = models.CharField(
         max_length=50, verbose_name="Урок", help_text="Введите название урока"
     )
+
     description = models.TextField(
         blank=True,
         null=True,
@@ -49,6 +67,7 @@ class Lesson(models.Model):
         verbose_name="Картинка",
         help_text="Загрузите картинку",
     )
+
     course = models.ForeignKey(
         Course,
         on_delete=models.SET_NULL,
@@ -59,13 +78,24 @@ class Lesson(models.Model):
         related_name='lessons',
     )
 
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        verbose_name="Владелец урока",
+        blank=True,
+        null=True,
+        help_text="Укажите владельца урока",
+    )
+
     video = models.FileField(
         upload_to="materials/media",
         blank=True,
         null=True,
-        verbose_name="Видео",
         help_text="Загрузите видео",
     )
+
+    url = models.URLField(max_length=200, blank=True, null=True, verbose_name="Ссылка",
+        help_text="Загрузите ссылку",)
 
     class Meta:
         verbose_name = "Урок"
