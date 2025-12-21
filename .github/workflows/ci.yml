@@ -102,7 +102,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Fetch updates
         run: |
-          cd ${{ secrets.DEPLOY_DIR }}
+          cd /home/viktor65_ds
           git fetch
           git switch dev
           git merge origin/dev
