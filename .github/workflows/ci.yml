@@ -99,80 +99,11 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/homework30'
 
     steps:
-      - name: Check out code
-        uses: actions/checkout@v3
-
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_KEY }}
-
-      - name: Install rsync
+      - uses: actions/checkout@v4
+      - name: Fetch updates
         run: |
-          sudo apt-get update
-          sudo apt-get install -y rsync
-
-      - name: Copy project files to server
-        run: |
-          # Добавляем ключ хоста в known_hosts
-          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts 2>/dev/null || true
- 
-          # Копируем файлы с отключенной проверкой ключа хоста
-          rsync -avz -e "ssh -o StrictHostKeyChecking=no" \
-            --exclude '__pycache__' \
-            --exclude '.git' \
-            --exclude 'venv' \
-            --exclude '.venv' \
-            --exclude '*.pyc' \
-            --exclude '.env' \
-            . ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.DEPLOY_DIR }}
-
-      - name: Apply migrations on server
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "DEPLOY_DIR='${{ secrets.DEPLOY_DIR }}' bash -s" << 'EOF'
-            set -e
-            cd "$DEPLOY_DIR"
- 
-            # Ждем пока база данных будет готова
-            echo "Waiting for database to be ready..."
-            for i in {1..30}; do
-              if docker compose exec -T db pg_isready > /dev/null 2>&1; then
-                echo "Database is ready!"
-                break
-              fi
-              echo "Waiting for database... ($i/30)"
-              sleep 2
-            done
- 
-            # Запускаем контейнеры если они еще не запущены
-            docker compose up -d --build || true
- 
-            # Ждем пока контейнер web будет готов
-            echo "Waiting for web container to be ready..."
-            sleep 5
- 
-            # Выполняем миграции внутри Docker контейнера
-            echo "Running migrations in Docker container..."
-            docker compose exec -T web python manage.py migrate
-          EOF
-
-      - name: Collect static files on server
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} "DEPLOY_DIR='${{ secrets.DEPLOY_DIR }}' bash -s" << 'EOF'
-            set -e
-            cd "$DEPLOY_DIR"
- 
-            # Выполняем collectstatic внутри Docker контейнера
-            echo "Collecting static files in Docker container..."
-            docker compose exec -T web python manage.py collectstatic --noinput
-          EOF
-
-      - name: Restart application
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-            sudo systemctl restart myapp.service || echo "Service might not exist, continuing..."
-          EOF
-
-      - name: Deploy success
-        run: |
-          echo "✅ Deployment completed successfully to branch: ${{ github.ref }}"
+          cd ${{ secrets.DEPLOY_DIR }}
+          git fetch
+          git switch dev
+          git merge origin/dev
+          docker compose up --build --force-recreate -d
