@@ -96,7 +96,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: test
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/homework30'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/homework30' || github.ref == 'refs/heads/develop'
 
     steps:
       - name: Check out code
@@ -174,4 +174,3 @@ jobs:
       - name: Deploy success
         run: |
           echo "✅ Deployment completed successfully to branch: ${{ github.ref }}"
- 
