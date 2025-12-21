@@ -116,8 +116,8 @@ jobs:
             # Обновляем код из git
             echo "Fetching updates from git..."
             git fetch
-            git switch dev
-            git merge origin/dev
+            git switch develop
+            git merge origin/develop
  
             # Запускаем контейнеры (сначала db и redis, потом web)
             echo "Starting Docker containers..."
@@ -174,3 +174,4 @@ jobs:
       - name: Deploy success
         run: |
           echo "✅ Deployment completed successfully to branch: ${{ github.ref }}"
+ 
