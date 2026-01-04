@@ -2,8 +2,8 @@ import os
 from pathlib import Path
 from datetime import timedelta
 
-from django.conf.global_settings import EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_PASSWORD, EMAIL_USE_TLS, EMAIL_USE_SSL, \
-    SERVER_EMAIL, DEFAULT_FROM_EMAIL
+from django.conf.global_settings import (EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_PASSWORD, EMAIL_USE_TLS, EMAIL_USE_SSL,
+                                         SERVER_EMAIL, DEFAULT_FROM_EMAIL)
 from dotenv import load_dotenv
 
 
@@ -136,8 +136,8 @@ STRIPE_API_KEY = os.getenv("STRIPE_API_KEY")
 
 # Настройки для Celery
 
-# URL-адрес брокера сообщений
-CELERY_BROKER_URL = "redis://localhost:6379" # Например, Redis, который по умолчанию работает на порту 6379
+# URL-адрес брокера сообщений. Например, Redis, который по умолчанию работает на порту 6379
+CELERY_BROKER_URL = "redis://localhost:6379"
 
 # URL-адрес брокера результатов, также Redis
 CELERY_RESULT_BACKEND = "redis://localhost:6379"
