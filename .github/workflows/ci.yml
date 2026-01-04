@@ -51,6 +51,7 @@ jobs:
 
       - name: Install flake8
         run: |
+          python -m poetry install --upgrade poetry
           poetry install flake8
 
       - name: Run flake8
