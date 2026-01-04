@@ -49,6 +49,13 @@ jobs:
           curl -sSL https://install.python-poetry.org | python -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      - name: Install flake8
+        run: |
+          poetry install flake8
+
+      - name: Run flake8
+        run: flake8 .
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
