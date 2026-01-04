@@ -54,7 +54,7 @@ jobs:
           poetry add --dev flake8
 
       - name: Run flake8
-        run: flake8 .
+        run: poetry run flake8 .
 
       - name: Install system dependencies
         run: |
