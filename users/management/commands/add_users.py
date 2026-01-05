@@ -10,7 +10,7 @@ class Command(BaseCommand):
         user, _ = User.objects.get_or_create(email='petrov@mail.ru')
 
         payments = [{'user': user, 'date': '2025-10-18', 'amount': 60000, 'payment_method': 'transfer'},
-                   {'user': user, 'date': '2025-10-18', 'amount': 45000, 'payment_method': 'cash'},]
+                    {'user': user, 'date': '2025-10-18', 'amount': 45000, 'payment_method': 'cash'},]
 
         for pay in payments:
             payments, created = Payment.objects.get_or_create(**pay)
