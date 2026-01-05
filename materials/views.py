@@ -39,7 +39,7 @@ class LessonViewSet(ModelViewSet):
         elif self.action in ["update", "retrieve"]:
             self.permission_classes = (IsModer | IsOwner,)
         elif self.action == "destroy":
-             self.permission_classes = (~IsModer | IsOwner,)
+            self.permission_classes = (~IsModer | IsOwner,)
         return super().get_permissions()
 
     pagination_class = CustomPagination
