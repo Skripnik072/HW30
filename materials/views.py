@@ -39,8 +39,7 @@ class LessonViewSet(ModelViewSet):
         elif self.action in ["update", "retrieve"]:
             self.permission_classes = (IsModer | IsOwner,)
         elif self.action == "destroy":
-            self.permission_classes = (IsOwner,)
-            # self.permission_classes = (~IsModer | IsOwner,)
+             self.permission_classes = (~IsModer | IsOwner,)
         return super().get_permissions()
 
     pagination_class = CustomPagination
@@ -51,7 +50,7 @@ class CourseListApiView(ListAPIView):
     '''Дженерик для вывода списка курсов'''
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-    permission_classes = [CustomPagination]
+    permission_classes = [AllowAny,]
 
 
 class CourseCreateApiView(CreateAPIView):
