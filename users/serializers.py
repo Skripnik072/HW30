@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 from rest_framework.validators import UniqueValidator
-from users.models import Payment, User,Subscription, Paymcourse
+from users.models import Payment, User, Subscription, Paymcourse
 
 
 class UserSerializer(ModelSerializer):
@@ -25,6 +25,7 @@ class UserSerializer(ModelSerializer):
         user.save()
         return user
 
+
 class PaymentSerializer(ModelSerializer):
     class Meta:
         model = Payment
@@ -35,6 +36,7 @@ class SubscriptionSerializer(ModelSerializer):
     class Meta:
         model = Subscription
         fields = "__all__"
+
 
 class PaymcourseSerializer(ModelSerializer):
     class Meta:

@@ -94,8 +94,7 @@ class Lesson(models.Model):
         help_text="Загрузите видео",
     )
 
-    url = models.URLField(max_length=200, blank=True, null=True, verbose_name="Ссылка",
-        help_text="Загрузите ссылку",)
+    url = models.URLField(max_length=200, blank=True, null=True, verbose_name="Ссылка", help_text="Загрузите ссылку",)
 
     class Meta:
         verbose_name = "Урок"

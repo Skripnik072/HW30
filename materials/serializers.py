@@ -1,18 +1,17 @@
 from rest_framework.fields import SerializerMethodField
 from rest_framework import serializers
-
 from materials.models import Course, Lesson
 from materials.validators import validate_forbidden_words
-
 from users.models import Subscription
 
 
 class LessonSerializer(serializers.ModelSerializer):
-    url = serializers.URLField(validators= [validate_forbidden_words], required=False, allow_blank=True)
+    url = serializers.URLField(validators=[validate_forbidden_words], required=False, allow_blank=True)
 
     class Meta:
         model = Lesson
         fields = "__all__"
+
 
 class LessonDetailSerializer(serializers.ModelSerializer):
     count_lesson_as_course = serializers.SerializerMethodField()
@@ -29,6 +28,7 @@ class LessonDetailSerializer(serializers.ModelSerializer):
             "course",
             "count_lesson_as_course",
         )
+
 
 class CourseSerializer(serializers.ModelSerializer):
     lessons = LessonDetailSerializer(many=True, read_only=True)

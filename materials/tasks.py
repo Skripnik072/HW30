@@ -23,16 +23,17 @@ def send_update(course_id):
         subs_item = Subscription.objects.filter(course_id=course_id, user=user.pk).first()
         if subs_item:
             if datetime.now() - course.last_updated >= timedelta(hours=4):
-    # Отправляем уведомление пользователю
+                # Отправляем уведомление пользователю
                 send_mail(
                     subject="Отчет по обновлению курса",
                     message=f"Курс {course} обновлен",
-                    from_email=settings/EMAIL_HOST_USER,
+                    from_email=settings / EMAIL_HOST_USER,
                     recipient_list=[user.email])
-    # Здесь логика отправки письма
+                # Здесь логика отправки письма
                 print(f"Отправлено уведомление для курса {course_id}")
             else:
                 print("Прошло менее 4 часов, уведомление не отправлено.")
+
 
 @shared_task
 def deactivate_users():

@@ -33,7 +33,6 @@ class LessonViewSet(ModelViewSet):
         lesson.owner = self.request.user
         lesson.save()
 
-
     def get_permissions(self):
         if self.action in "create":
             self.permission_classes = (~IsModer,)

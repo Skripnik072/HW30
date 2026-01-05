@@ -79,6 +79,7 @@ class Payment(models.Model):
         verbose_name = "Платеж"
         verbose_name_plural = "Платежи"
 
+
 class Subscription(models.Model):
     user = models.ForeignKey(
         User,
@@ -98,6 +99,7 @@ class Subscription(models.Model):
     class Meta:
         verbose_name = "Подписка"
         verbose_name_plural = "Подписки"
+
 
 class Paymcourse(models.Model):
     amount = models.PositiveIntegerField(
@@ -133,6 +135,7 @@ class Paymcourse(models.Model):
         on_delete=models.SET_NULL,
         verbose_name="Оплаченный курс",
     )
+
     class Meta:
         verbose_name = "Оплата"
         verbose_name_plural = "Оплаты"

@@ -1,16 +1,14 @@
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework import filters
-from rest_framework.generics import (ListAPIView, CreateAPIView,
-    RetrieveAPIView, UpdateAPIView, DestroyAPIView)
+from rest_framework.generics import (ListAPIView, CreateAPIView, RetrieveAPIView, UpdateAPIView, DestroyAPIView)
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
-from users.models import Payment, User, Subscription,Paymcourse
+from users.models import Payment, User, Subscription, Paymcourse
 from materials.models import Course
-from users.serializers import (PaymentSerializer, UserSerializer,
-    SubscriptionSerializer,PaymcourseSerializer)
+from users.serializers import (PaymentSerializer, UserSerializer, SubscriptionSerializer, PaymcourseSerializer)
 from materials.serializers import CourseSerializer
-from users.services import create_stripe_product, create_stripe_price, create_stripe_session
+from users.services import create_stripe_price, create_stripe_session
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
@@ -19,6 +17,7 @@ class UserListApiView(ListAPIView):
     '''Дженерик для просмотра списка пользователей'''
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class UserCreateApiView(CreateAPIView):
@@ -107,6 +106,7 @@ class SubscriptionApiView(APIView):
         serializer = CourseSerializer(course, context={'request': request})
         return Response(serializer.data)
 
+
 class PaymcourseCreateApiView(CreateAPIView):
     '''Дженерик для создания оплаты за курс'''
     queryset = Paymcourse.objects.all()
@@ -117,8 +117,8 @@ class PaymcourseCreateApiView(CreateAPIView):
         payment = serializer.save(user=self.request.user)
         price = create_stripe_price(payment.amount)
         session_id, payment_link = create_stripe_session(price)
-        product = create_stripe_product(payment.course)
-        payment_course = product
-        payment_session_id = session_id
+        # product = create_stripe_product(payment.course)
+        # payment_course = product
+        # payment_session_id = session_id
         payment_link = payment_link
         payment.save()
