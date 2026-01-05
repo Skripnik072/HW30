@@ -20,7 +20,7 @@ from materials.paginations import CustomPagination
 
 
 class LessonViewSet(ModelViewSet):
-    '''Вьсет для операций CRUD по урокам'''
+    '''Вьюсет для операций CRUD по урокам'''
     queryset = Lesson.objects.all()
 
     def get_serializer_class(self):
@@ -39,7 +39,8 @@ class LessonViewSet(ModelViewSet):
         elif self.action in ["update", "retrieve"]:
             self.permission_classes = (IsModer | IsOwner,)
         elif self.action == "destroy":
-            self.permission_classes = (~IsModer | IsOwner,)
+            self.permission_classes = (IsOwner,)
+            # self.permission_classes = (~IsModer | IsOwner,)
         return super().get_permissions()
 
     pagination_class = CustomPagination
